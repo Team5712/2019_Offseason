@@ -9,6 +9,8 @@ package frc.robot;
 
 import java.util.*;
 
+import javax.lang.model.util.ElementScanner6;
+
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
@@ -46,34 +48,32 @@ public class Robot extends IterativeRobot {
   double robotPositionX = 0;
   double robotPositionY = 0;
   double adjustedHeading;
-  // Gets the current time of computer in Milliseconds
-  long startTime = System.currentTimeMillis();
+  int coordIndex = 0;
   // Find ratio encoders to inches
   double encoderToIn = 12.57f / 517;
   double distance = 0.0f;
   double oldLeft = 0.0f;
   double oldRight = 0.0f;
-
+  double maxspeed = 0;
   double leftDrive, rightDrive;
 
   double max_spd_l;
   double max_spd_r;
   double max_err;
 
+  
+
   PID turnpid;
   PID drivepid;
 
   int timeout = 20;
 
-  final double APT = (double) (89.73339f / 1034.0);
-
-  AngleMath angleMath;
+  RoboMath RoboMath;
 
   @Override
   public void robotInit() {
-    
-    Values values = new Values();
-    angleMath = new AngleMath();
+
+    RoboMath  = new RoboMath();
     // robot init is run when your robot is turned on
     // reset gyro Yaw
     gyro.zeroYaw();
@@ -84,13 +84,18 @@ public class Robot extends IterativeRobot {
     l_master.setInverted(true);
     r_master.setInverted(true);
 
-    // i = .008 iz = 5
-    //turnpid = new PID(0.04, 0, 0, .04, 0);
-    turnpid = new PID(0.05, 0, 0, .04, 0);
+    //i = .008 iz = 5
+    turnpid = new PID(.03, 0, 0, 0, 0);
+    //l_master.config_kF(0,2.17659);
     // .4
-    drivepid = new PID(.05, 0, 0, 0, 0);
+    drivepid = new PID(.2, 0, 0, .1, 0);
+
+    l_slave.follow(l_master);
+    r_slave.follow(r_master);
 
   }
+
+  
 
   @Override
   public void robotPeriodic() {
@@ -109,48 +114,86 @@ public class Robot extends IterativeRobot {
     gyro.zeroYaw();
     l_master.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 0, 10);
     r_master.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 0, 10);
-
     initPID();
   }
 
   public void initPID() {
+    //sets PID values to 0
     l_master.selectProfileSlot(0, 0);
-    // l_master.config_kF(0, pid.kF, timeout);
-    // l_master.config_kP(0, pid.kP, timeout);
-    // l_master.config_kI(0, pid.kI, timeout);
-    // l_master.config_kD(0, pid.kD, timeout);
+    
+    l_master.config_kF(0, 0, timeout);
+    l_master.config_kP(0, 0, timeout);
+    l_master.config_kI(0, 0, timeout);
+    l_master.config_kD(0, 0, timeout);
+
+    r_master.selectProfileSlot(0, 0);
+
+    r_master.config_kF(0, 0, timeout);
+    r_master.config_kP(0, 0, timeout);
+    r_master.config_kI(0, 0, timeout);
+    r_master.config_kD(0, 0, timeout);
 
   }
 
   @Override
   public void teleopPeriodic() {
 
-    double[] destinationPoint = {-48, 24*3};
-    double[] getError = angleMath.calculateRelativeAngle(RoboMath.toUnitCircleDegrees(gyro.getYaw()),destinationPoint);
-    //angleMath.getRelativeCoorinateAngle();
-    double turnSpeed = this.getTurnPIDOutput(getError[1]);
-    double driveSpeed = this.getDrivePIDOutput(getError[0]);
-    System.out.println("Angle: "+getError[1]);
-    //System.out.println("Angle: "+angleMath.calulateTurnAngle(RoboMath.toUnitCircleDegrees(gyro.getYaw())));
-    //System.out.println("Distance: "+angleMath.getRelativeDistance());
-    //System.out.println("Relative Angle: "+angleMath.getRelativeCoorinateAngle());
-    leftDrive = -turnSpeed +driveSpeed;
-    rightDrive = turnSpeed +driveSpeed;
+    double coordinateSequence[][] = {{3 * 24, 4 * 24}, {1 * 24, 8 * 24}, {-2 * 24, 19 * 24}, {-3 * 24, 11 * 24}, {-1 * 24, 2 * 24}, {0, 0}};
 
-    drive.tankDrive(leftDrive, rightDrive);
-    
+    //Checks for button to be pushed
+    if (joystick_l.getRawButton(1)==true){
+      
+      if(coordIndex < coordinateSequence.length) {
+        
+        double[] getError = RoboMath.calculateRelativeAngle(RoboMath.toUnitCircleDegrees(gyro.getYaw()),coordinateSequence[coordIndex]);
+        double angleError = getError[1];
+        double distanceError = getError[0];
+        //Calulates the speed it needs to turn at and drive speed using PID
+        double turnSpeed = this.getTurnPIDOutput(angleError);
+        double driveSpeed = this.getDrivePIDOutput(distanceError);
+        System.out.println("Angle: "+getError[1]);
+        System.out.println("Distance: "+getError[0]);
+        //Checks to see if the angle error is with inside the tolerance degrees if not it will turn then continue to drive forwards
+        double tolerance = 10;
+        if(Math.abs(angleError)<tolerance && Math.abs(distanceError) > 1)
+        {
+          rightDrive = (driveSpeed+turnSpeed);
+          leftDrive = (driveSpeed-turnSpeed);
+        }
+        else
+        {
+          rightDrive = turnSpeed;
+          leftDrive = -turnSpeed;
+        }
+  
+        if(Math.abs(getError[0]) < 6) {
+          coordIndex += 1;
+        }
+      }
+      
+      drive.tankDrive(leftDrive, rightDrive);
+      
 
-    this.updatePosition();
+      //driveCurve(coordinateSequence);
+      /*
+      //Ask for destination point
+      double driveSpeeds[] = driveToPoint(3*24, 6*24);
+      rightDrive = driveSpeeds[0];
+      leftDrive = driveSpeeds[1];
+      //Applys power to drive train
+      drive.tankDrive(leftDrive, rightDrive);
+      */
+  } 
+  //if button isn't pushed allow you to drive
+  else{
+    drive.tankDrive(-joystick_l.getY(),-joystick_r.getY());
+  }
+    //Updates our dashboard
     this.updateDashboard();
+    //Gets the current x and y position
+    this.updatePosition();
   }
 
-  public boolean threshold(double value, double setpoint, double threshold) {
-    if (value < (setpoint + threshold) && value > (setpoint - threshold)) {
-      return true;
-    } else {
-      return false;
-    }
-  }
 
   @Override
   public void autonomousInit() {
@@ -175,16 +218,6 @@ public class Robot extends IterativeRobot {
     // double error = RoboMath.getAngleToDegree(setpoint,
     // RoboMath.toUnitCircleDegrees(gyro.getYaw()));
     double error = setpoint;
-
-    /*if (setpoint - RoboMath.toUnitCircleDegrees(gyro.getYaw()) > 0)
-      error = setpoint - RoboMath.toUnitCircleDegrees(gyro.getYaw());
-    else
-      error = (setpoint - RoboMath.toUnitCircleDegrees(gyro.getYaw())) + 360;
-      
-    if (error > 180) {
-      error -= 360;
-    }
-  */
     // calculate proportion value
     double p = turnpid.kP * error;
 
@@ -242,17 +275,116 @@ public class Robot extends IterativeRobot {
   public void testPeriodic() {
   }
 
-  public void updatePosition() {
-    RoboMath.calculateCoordinatePosition(l_master.getSelectedSensorPosition(0), r_master.getSelectedSensorPosition(0),
-        gyro.getYaw());
-    RoboMath.calculateLeftRightCoordinates(RoboMath.toUnitCircleDegrees(gyro.getYaw()));
-  }
 
   public void updateDashboard() {
+    //Displays values on our dashboard
     SmartDashboard.putNumber("Velocity l", l_master.getSelectedSensorVelocity(0));
     SmartDashboard.putNumber("Velocity r", r_master.getSelectedSensorVelocity(0));
     SmartDashboard.putNumber("Heading", gyro.getYaw());
     SmartDashboard.putNumber("Bus voltage L", l_master.getMotorOutputVoltage());
     SmartDashboard.putNumber("Bus voltage R", r_master.getMotorOutputVoltage());
   }
+
+  public void updatePosition() {
+    //Gets current x and y positions
+    RoboMath.calculateCoordinatePosition(l_master.getSelectedSensorPosition(0), r_master.getSelectedSensorPosition(0),
+    gyro.getYaw());
+  }
+
+  public double[] driveToPoint(double x, double y) {
+    //Gets the error that is required to get robot to correct angle and distance to point
+    double[] points = {x, y};
+  
+    //getError[0] is distance getError[1] is angle
+    double[] getError = RoboMath.calculateRelativeAngle(RoboMath.toUnitCircleDegrees(gyro.getYaw()),points);
+    double angleError = getError[1];
+    double distanceError = getError[0];
+    //Calulates the speed it needs to turn at and drive speed using PID
+    double turnSpeed = this.getTurnPIDOutput(angleError);
+    double driveSpeed = this.getDrivePIDOutput(distanceError);
+    System.out.println("Angle: "+getError[1]);
+    System.out.println("Distance: "+getError[0]);
+    //Checks to see if the angle error is with inside the tolerance degrees if not it will turn then continue to drive forwards
+    double tolerance = 10;
+    if(Math.abs(angleError)<tolerance && Math.abs(distanceError) > 1)
+    {
+    rightDrive = (driveSpeed+turnSpeed);
+    leftDrive = (driveSpeed-turnSpeed);
+    }
+    else
+    {
+      rightDrive = turnSpeed;
+      leftDrive = -turnSpeed;
+    }
+    double[] driveSpeeds = {rightDrive,leftDrive};
+    return driveSpeeds;
+  }
+
+  public double getDistance(double coordinate[]) {
+    double[] points = {coordinate[0], coordinate[1]};
+    double[] getError = RoboMath.calculateRelativeAngle(RoboMath.toUnitCircleDegrees(gyro.getYaw()),points);
+    return getError[0];
+  }
+
+  public double[] driveToPoint(double coordinate[]) {
+    //Gets the error that is required to get robot to correct angle and distance to point
+    double[] points = {coordinate[0], coordinate[1]};
+  
+    //getError[0] is distance getError[1] is angle
+    double[] getError = RoboMath.calculateRelativeAngle(RoboMath.toUnitCircleDegrees(gyro.getYaw()),points);
+    double angleError = getError[1];
+    double distanceError = getError[0];
+    //Calulates the speed it needs to turn at and drive speed using PID
+    double turnSpeed = this.getTurnPIDOutput(angleError);
+    double driveSpeed = this.getDrivePIDOutput(distanceError);
+    System.out.println("Angle: "+getError[1]);
+    System.out.println("Distance: "+getError[0]);
+    //Checks to see if the angle error is with inside the tolerance degrees if not it will turn then continue to drive forwards
+    double tolerance = 10;
+    if(Math.abs(angleError)<tolerance && Math.abs(distanceError) > 1)
+    {
+    rightDrive = (driveSpeed+turnSpeed);
+    leftDrive = (driveSpeed-turnSpeed);
+    }
+    else
+    {
+      rightDrive = turnSpeed;
+      leftDrive = -turnSpeed;
+    }
+    double[] driveSpeeds = {rightDrive,leftDrive};
+    return driveSpeeds;
+  }
+
+  /*
+  public double[] driveCurve(double curve[][]) {
+
+    double[] getError = RoboMath.calculateRelativeAngle(RoboMath.toUnitCircleDegrees(gyro.getYaw()),coordinateSequence[coordIndex]);
+    double angleError = getError[1];
+    double distanceError = getError[0];
+    //Calulates the speed it needs to turn at and drive speed using PID
+    double turnSpeed = this.getTurnPIDOutput(angleError);
+    double driveSpeed = this.getDrivePIDOutput(distanceError);
+    System.out.println("Angle: "+getError[1]);
+    System.out.println("Distance: "+getError[0]);
+    //Checks to see if the angle error is with inside the tolerance degrees if not it will turn then continue to drive forwards
+    double tolerance = 10;
+    if(Math.abs(angleError)<tolerance && Math.abs(distanceError) > 1)
+    {
+      rightDrive = (driveSpeed+turnSpeed);
+      leftDrive = (driveSpeed-turnSpeed);
+    }
+    else
+    {
+      rightDrive = turnSpeed;
+      leftDrive = -turnSpeed;
+    }
+
+    if(getError[0] < 6) {
+      coordIndex += 1;
+    }
+
+    double drive[] = {leftDrive, rightDrive};
+    return drive;
+  }   
+*/
 }
