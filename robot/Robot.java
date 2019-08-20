@@ -7,6 +7,8 @@
 
 package frc.robot;
 
+import java.sql.Struct;
+import java.util.*;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
@@ -25,6 +27,32 @@ public class Robot extends IterativeRobot {
     // new comment - this is new
     // new comment - this is chaytons comment
     // create motor controllers. CTRE Installer required before using in code
+    // private class Controls {
+    //     Joystick joystick_l = new Joystick(0);
+    //     Joystick joystick_r = new Joystick(1);
+    //     DifferentialDrive drive = new DifferentialDrive(l_master, r_master);
+    // }
+
+    // private class Sensors {
+    //     AHRS gyro = new AHRS(Port.kMXP);
+    // }
+
+    // private class Motors {
+    //     WPI_TalonSRX l_master = new WPI_TalonSRX(1);
+    //     WPI_VictorSPX l_slave = new WPI_VictorSPX(2);
+    //     WPI_TalonSRX r_master = new WPI_TalonSRX(5);
+    //     WPI_VictorSPX r_slave = new WPI_VictorSPX(6);
+    // }
+
+    // private class Position {
+    //     double x;
+    //     double y;
+    // }
+
+    // private class Flags {
+
+    // }
+
     WPI_TalonSRX l_master = new WPI_TalonSRX(1);
     WPI_VictorSPX l_slave = new WPI_VictorSPX(2);
     WPI_TalonSRX r_master = new WPI_TalonSRX(5);
@@ -39,8 +67,7 @@ public class Robot extends IterativeRobot {
     // create gyro. NAVX installer required before using in code
     AHRS gyro = new AHRS(Port.kMXP);
 
-    double robotPositionX = 0;
-    double robotPositionY = 0;
+    
     double adjustedHeading;
     int coordIndex = 0;
     // Find ratio encoders to inches
@@ -110,8 +137,8 @@ public class Robot extends IterativeRobot {
         // reset gyro Yaw
         l_master.setSelectedSensorPosition(0);
         r_master.setSelectedSensorPosition(0);
-        robotPositionX = 0;
-        robotPositionY = 0;
+        xPosition = 96;
+        yPosition = 0;
         gyro.zeroYaw();
         l_master.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 0, 10);
         r_master.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 0, 10);
@@ -138,79 +165,33 @@ public class Robot extends IterativeRobot {
 
     @Override
     public void teleopPeriodic() {
+        System.out.println("x: " +this.xPosition + "     Y: " + this.yPosition);
+        if (joystick_r.getRawButton(1)) {
+            int[][] blocked = {{1,4}};
+            int width = 6;
+            int height = 6;
+            Node start = new Node(2, 0);
+            Node end = new Node(0, 5);
+            AStar astar = new AStar(height, width, start, end);
+            astar.setBlocks(blocked);
+            List<Node> listing = astar.findPath();
+            double[][] points = new double[listing.size()][2];
+
+            System.out.println(astar.toString());
+
+            for(int i = 0; i<listing.size();i++) {
+                points[i][0]=listing.get(i).getRow()*48;
+                points[i][1]=listing.get(i).getCol()*48;
+                //System.out.println("x: "+listing.get(i).getRow()+" y: "+listing.get(i).getCol());
+            }
+            this.driveToPoints(points);
+            System.out.println(Arrays.deepToString(points));
+        }
+
         
-
-        int[][] blocked = {{1, 1}, {2, 2}};
-        int width = 5;
-        int height = 5;
-        Node start = new Node(0, 0);
-        Node end = new Node(3, 3);
-
-        AStar astar = new AStar(height, width, start, end);
-        astar.setBlocks(blocked);
-        // System.out.println(astar.toString());
-
-        System.out.println(astar.findPath());
-        
-
-
-        // if (joystick_r.getRawButton(1)) {
-        // double currentX = this.xPosition;
-        // double currentY = this.yPosition;
-        // // int startX = (int) Math.rint(currentX);
-        // // int startY = (int) Math.rint(currentY);
-        // int startX = 1;
-        // int startY = 0;`
-        // int endX = 3;
-        // int endY = 2;
-        // int heightOfField = 7;
-        // int lengthOfField = 7;
-        // ArrayList<int[]> arrli = testing.test(1, lengthOfField, heightOfField,
-        // heightOfField - 2 - endY,
-        // endX, heightOfField - 2 - startY, startX,
-        // new int[][]
-        // {{0,0},{0,1},{0,2},{0,3},{0,4},{0,5},{0,6},{1,0},{1,6},{2,0},{2,6},{3,0},{3,6},{4,0},{4,6},{5,0},{5,6},{6,0},{6,1},{6,2},{6,3},{6,4},{6,5},{6,6}});
-        // points = new double[arrli.size()][2];
-
-        // for (int i = 0; i < arrli.size(); i++) {
-        // points[i][0] = arrli.get(i)[0] * 24 * 2;
-        // points[i][1] = arrli.get(i)[1] * 24 * 2;
-        // }
-        // System.out.println(Arrays.deepToString(points));
-        // this.driveToPoints(points);
-        // }
-
-        // if(joystick_l.getRawButton(1)) {
-        // double bonuspoints[][] = {{0, 0}, {0, 120}};
-        // this.driveToPoints(bonuspoints);
-        // }
-
-        // set shooter speed to half when holding button 1 on left joystick
-        /*
-         * shooter.setSpeed(0.5); } else { shooter.setSpeed(0.0); }
-         */
-
-        // double coordinateSequence1[][] = {{0 * 24, 10 * 24}, {-4 * 24, 10 * 24}};
-        // ArrayList<int[]> coordListTemp =
-        // aSearch.generatePoints((int)Math.rint(this.xPosition),
-        // (int)Math.rint(this.yPosition), -2, 5);
-        // System.out.println(coordListTemp.toString());
-
-        // double drivePoints[][] = new double[coordListTemp.size()][2];
-
-        // for(int counter=0; counter < coordListTemp.size(); counter++)
-        // {
-        // drivePoints[counter][0] = coordListTemp.get(counter)[0]*24;
-        // drivePoints[counter][1] = coordListTemp.get(counter)[1]*24;
-        // }
-
-        // System.out.println(drivePoints.toString());
-
-        // //Updates our dashboard
-        // this.updateDashboard();
-        // Gets the current x and y position
 
         this.updatePosition();
+
     }
 
     @Override
