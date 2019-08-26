@@ -10,4 +10,11 @@ public class Const {
 
     public static final double THRESH_TURN = 3.5;
     public static final double THRESH_DRIVE = 5;
+
+    // this is the amount the field will be scaled up in inches
+    // eg. 12 will be 1 foot, 1 will be 1 inch, (1/2) will be half an inch
+    public static int FIELD_SCALE = 48;
+
+    public static double PATHFINDING_SPEED = 0.75;
+
 }
