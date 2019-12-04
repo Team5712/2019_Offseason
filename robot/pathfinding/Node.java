@@ -23,7 +23,7 @@ public class Node {
     }
 
     public void calculateHeuristic(Node finalNode) {
-        this.h = Math.abs(finalNode.getRow() - getRow()) + Math.abs(finalNode.getCol() - getCol());
+        this.h = Math.abs(finalNode.getX() - getX()) + Math.abs(finalNode.getY() - getY());
     }
 
     public void setNodeData(Node currentNode, int cost) {
@@ -50,12 +50,17 @@ public class Node {
     @Override
     public boolean equals(Object arg0) {
         Node other = (Node) arg0;
-        return this.getRow() == other.getRow() && this.getCol() == other.getCol();
+        return this.getX() == other.getX() && this.getY() == other.getY();
     }
 
     @Override
     public String toString() {
-        return "Node [row=" + row + ", col=" + col + "]";
+        return "Node [x=" + this.getX() + ", y=" + this.getY() + "]";
+    }
+
+    public double[] toDoubleArray() {
+        double[] array = {this.row, this.col};
+        return array;
     }
 
     public int getH() {
@@ -98,7 +103,7 @@ public class Node {
         this.isBlock = isBlock;
     }
 
-    public int getRow() {
+    public int getX() {
         return row;
     }
 
@@ -106,7 +111,7 @@ public class Node {
         this.row = row;
     }
 
-    public int getCol() {
+    public int getY() {
         return col;
     }
 

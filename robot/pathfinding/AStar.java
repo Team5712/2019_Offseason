@@ -2,6 +2,8 @@ package frc.robot.pathfinding;
 
 import java.util.*;
 
+import frc.robot.Const;
+
 /**
  * A Star Algorithm
  *
@@ -11,6 +13,7 @@ import java.util.*;
 public class AStar {
     private static int DEFAULT_HV_COST = 10; // Horizontal - Vertical Cost
     private static int DEFAULT_DIAGONAL_COST = 14;
+
     private int hvCost;
     private int diagonalCost;
     private Node[][] searchArea;
@@ -89,8 +92,8 @@ public class AStar {
     }
 
     private void addAdjacentLowerRow(Node currentNode) {
-        int row = currentNode.getRow();
-        int col = currentNode.getCol();
+        int row = currentNode.getX();
+        int col = currentNode.getY();
         int lowerRow = row + 1;
         if (lowerRow < getSearchArea().length) {
             if (col - 1 >= 0) {
@@ -104,8 +107,8 @@ public class AStar {
     }
 
     private void addAdjacentMiddleRow(Node currentNode) {
-        int row = currentNode.getRow();
-        int col = currentNode.getCol();
+        int row = currentNode.getX();
+        int col = currentNode.getY();
         int middleRow = row;
         if (col - 1 >= 0) {
             checkNode(currentNode, col - 1, middleRow, getHvCost());
@@ -116,8 +119,8 @@ public class AStar {
     }
 
     private void addAdjacentUpperRow(Node currentNode) {
-        int row = currentNode.getRow();
-        int col = currentNode.getCol();
+        int row = currentNode.getX();
+        int col = currentNode.getY();
         int upperRow = row - 1;
         if (upperRow >= 0) {
             if (col - 1 >= 0) {
@@ -147,6 +150,17 @@ public class AStar {
             }
         }
     }
+
+    public static List<Node> transformGrid(List<Node> grid) {
+        
+        for(int i = 0; i < grid.size(); i++) {
+            Node cell = grid.get(i);
+            grid.set(i, new Node(cell.getX() * Const.FIELD_SCALE, cell.getY() * Const.FIELD_SCALE));    
+        }
+
+        return grid;
+    }
+    
 
     private boolean isFinalNode(Node currentNode) {
         return currentNode.equals(finalNode);

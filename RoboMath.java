@@ -11,8 +11,8 @@ import frc.robot.Const;
  * RoboMath
  */
 public class RoboMath {
-  //Zeros out all values
 
+    // TODO: remove these variables so that this class will have all static contents
     private double oldRight = 0;
     private double oldLeft = 0;
     private double distance = 0;
@@ -73,13 +73,15 @@ public class RoboMath {
     }
 
     /**
-     * will calculate 
+     * calculates the nearest relative angle to a given coordinate position
+     * the method returns the distance and angle the given point
      * 
+     * TODO: return only the angle and clean this method up, too many conditionals
      * 
-     * @param x
-     * @param y
-     * @param c_angle
-     * @param goalxy
+     * @param x the current x position of the robot
+     * @param y the current y position of the robot
+     * @param c_angle the current absolute angle of the robot
+     * @param goalxy the coordinate we wish to find the angle to
      * @return
      */
     public double[] calculateRelativeAngle(double x, double y, double c_angle,double[] goalxy){ 
@@ -133,7 +135,40 @@ public class RoboMath {
           //Calculates the distance we need to drive to get to our point
           double distance = direction*Math.sqrt(Math.pow(goalxy[0]-x, 2)+Math.pow(goalxy[1]-y, 2));  
           double [] distAndAngle = {distance,angle};
-          // System.out.println("x:" + x + " y:" + y);
+        //   System.out.println("distance:" + distance + " angle:" + angle);
           return distAndAngle;
+    }
+
+    /**
+     * returns the euclidean distance between two points
+     * 
+     * @param x1
+     * @param y1
+     * @param x2
+     * @param y2
+     * @return
+     */
+    public double getDistance(double x1, double y1, double x2, double y2) {
+        return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
+    }
+
+    /**
+     * returns the sum of distances between a list of points
+     * 
+     * @param points
+     * @return distance (double) the whole distance a set of points spans
+     */
+    public double getTotalDistanceOfPoints(double[][] points) {
+        double distance = 0;
+        
+        for(int i = 0; i < points.length; i++) {
+            if (i == points.length - 1) {
+                break;
+            }
+
+            distance += getDistance(points[i][0], points[i][1], points[i+1][0], points[i+1][1]);
+        }
+
+        return distance;
     }
 }
