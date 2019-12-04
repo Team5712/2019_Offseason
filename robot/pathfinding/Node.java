@@ -55,7 +55,12 @@ public class Node {
 
     @Override
     public String toString() {
-        return "Node [row=" + row + ", col=" + col + "]";
+        return "Node [x=" + this.getX() + ", y=" + this.getY() + "]";
+    }
+
+    public double[] toDoubleArray() {
+        double[] array = {this.row, this.col};
+        return array;
     }
 
     public int getH() {

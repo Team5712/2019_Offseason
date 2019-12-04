@@ -2,6 +2,8 @@ package frc.robot.pathfinding;
 
 import java.util.*;
 
+import frc.robot.Const;
+
 /**
  * A Star Algorithm
  *
@@ -148,6 +150,17 @@ public class AStar {
             }
         }
     }
+
+    public static List<Node> transformGrid(List<Node> grid) {
+        
+        for(int i = 0; i < grid.size(); i++) {
+            Node cell = grid.get(i);
+            grid.set(i, new Node(cell.getX() * Const.FIELD_SCALE, cell.getY() * Const.FIELD_SCALE));    
+        }
+
+        return grid;
+    }
+    
 
     private boolean isFinalNode(Node currentNode) {
         return currentNode.equals(finalNode);

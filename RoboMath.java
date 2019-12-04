@@ -135,7 +135,7 @@ public class RoboMath {
           //Calculates the distance we need to drive to get to our point
           double distance = direction*Math.sqrt(Math.pow(goalxy[0]-x, 2)+Math.pow(goalxy[1]-y, 2));  
           double [] distAndAngle = {distance,angle};
-          // System.out.println("x:" + x + " y:" + y);
+        //   System.out.println("distance:" + distance + " angle:" + angle);
           return distAndAngle;
     }
 
